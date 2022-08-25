@@ -1,9 +1,10 @@
-# UDP-Client-Server-implementation-in-C
+# Client/Server Implementation(UDP)
 
-A simple implementation of the UDP (User Datagram Protocol) client-server program in the C programming language. 
+A simple implementation of the UDP (User Datagram Protocol) client/server program in the C programming language. 
 In this case, client sends message to server and server echoes back.
 
 # Exceute the program
+
 Compile the program 
 
 1) $ gcc server.c -o server
