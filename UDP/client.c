@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <netdb.h>
 
+#define BUFFER_SIZE 1024
+
 // Returns hostname for the local computer
 void checkHostName(int hostname)
 {
@@ -19,36 +21,16 @@ void checkHostName(int hostname)
     }
 }
   
-// Returns host information corresponding to host name
-void checkHostEntry(struct hostent * hostentry)
-{
-    if (hostentry == NULL)
-    {
-        perror("gethostbyname");
-        exit(1);
-    }
-}
-  
-// Converts space-delimited IPv4 addresses
-// to dotted-decimal format
-void checkIPbuffer(char *IPbuffer)
-{
-    if (NULL == IPbuffer)
-    {
-        perror("inet_ntoa");
-        exit(1);
-    }
-}
-
+//Lists network adapter addresses on current machine(on Windows works properly, on Linux shows 127.0.1.1)
 static void publishIPAddressInfo(const char* host) 
 {
 	struct hostent *he = gethostbyname(host);
-	if (he == NULL) ,
+	if (he == NULL)
 	{ // NULL return value means resolution attempt failed
-		printf ("%s could not be resolved to an address. Did you mistype it?\n", host);
+		perror("gethostbyname: ");
 		return;
 	}
-	printf ("Client name is %s\n", he->h_name);
+	printf ("Host name is %s\n", he->h_name);
 	printf  ("\nIP Addresses: \n");
 	struct in_addr **addressList = (struct in_addr **) he->h_addr_list;
 	unsigned short IPcounter = 1;
@@ -68,8 +50,9 @@ int main(int argc, char **argv){
     char *IPbuffer;
     struct hostent *host_entry;
     int hostname;
+	int retVal;
   
-    // To retrieve hostname
+// To retrieve hostname
     hostname = gethostname(hostbuffer, sizeof(hostbuffer));
     checkHostName(hostname);
 	
@@ -80,31 +63,40 @@ int main(int argc, char **argv){
     exit(0);
   }
   
-  char *ip = "127.0.1.1"; // Address to send data
+// Address to send data 
+  char *ip = "127.0.0.1"; 
   int port = atoi(argv[1]);
 
   int sockfd;
   struct sockaddr_in addr;
-  char buffer[1024];
+  char buffer[BUFFER_SIZE];
   socklen_t addr_size;
   
   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  memset(&addr, '\0', sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = inet_addr(ip);
   
-   char* assignedAddr = inet_ntoa(addr.sin_addr); ;
+  char* assignedAddr = inet_ntoa(addr.sin_addr); ;
   printf("\nIP that is client sending msg to : %s\n", assignedAddr);
 
-  bzero(buffer, 1024);
+  bzero(buffer, BUFFER_SIZE);
   strcpy(buffer, "Hello, World!");
-  sendto(sockfd, buffer, 1024, 0, (struct sockaddr*)&addr, sizeof(addr));
+  sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&addr, sizeof(addr));
+  if( (retVal = sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&addr, sizeof(addr))) != BUFFER_SIZE )
+  {
+    perror("sendto");
+    exit(1);
+  }
   printf("\n[+]Data send: %s\n", buffer);
 
-  bzero(buffer, 1024);
+  bzero(buffer, BUFFER_SIZE);
   addr_size = sizeof(addr);
-  recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr*)&addr, &addr_size);
+  if( (retVal = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&addr, &addr_size)) < 0 )
+  {
+    perror("recvfrom");
+    exit(1);
+  }
   printf("[+]Data recv: %s\n", buffer);
 
   return 0;

@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <netdb.h>
 
+#define BUFFER_SIZE 1024
+
 void checkHostName(int hostname)
 {
     if (hostname == -1)
@@ -17,29 +19,9 @@ void checkHostName(int hostname)
         exit(1);
     }
 }
-  
-// Returns host information corresponding to host name
-void checkHostEntry(struct hostent * hostentry)
-{
-    if (hostentry == NULL)
-    {
-        perror("gethostbyname");
-        exit(1);
-    }
-}
-  
-// Converts space-delimited IPv4 addresses
-// to dotted-decimal format
-void checkIPbuffer(char *IPbuffer)
-{
-    if (NULL == IPbuffer)
-    {
-        perror("inet_ntoa: ");
-        exit(1);
-    }
-}
 
-static void publishIPAddressInfo(const char* host) // Lists the IP addresses that the current machine uses
+//Lists network adapter addresses on current machine(on Windows works properly, on Linux shows 127.0.1.1)
+static void publishIPAddressInfo(const char* host)
 {
 	struct hostent *he = gethostbyname(host);
 	if (he == NULL) // NULL return value means resolution attempt failed
@@ -66,8 +48,9 @@ int main(int argc, char **argv){
     char *IPbuffer;
     struct hostent *host_entry;
     int hostname;
+	int retVal;
   
-    // To retrieve hostname
+// To retrieve hostname
     hostname = gethostname(hostbuffer, sizeof(hostbuffer));
     checkHostName(hostname);
 	
@@ -84,9 +67,8 @@ int main(int argc, char **argv){
  
   int sockfd;
   struct sockaddr_in server_addr, client_addr;
-  char buffer[1024];
+  char buffer[BUFFER_SIZE];
   socklen_t addr_size;
-  int n;
 
   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sockfd < 0){
@@ -103,20 +85,27 @@ int main(int argc, char **argv){
   char* assignedAddr = inet_ntoa(server_addr.sin_addr); ;
   printf("\nIP that is assigned to host : %s\n", assignedAddr); // for INADDR_ANY, prints 0.0.0.0
 
-  n = bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)); //
-  if (n < 0) {
+  if ( (retVal = bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) ) < 0) {
     perror("[-]bind error");
     exit(1);
   }
 
-  bzero(buffer, 1024);
+  bzero(buffer, BUFFER_SIZE);
   addr_size = sizeof(client_addr);
-  recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr*)&client_addr, &addr_size);
+  if( (retVal = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&server_addr, &addr_size)) < 0 )
+  {
+    perror("recvfrom");
+    exit(1);
+  }
   printf("\n[+]Data recv: %s\n", buffer);
 
-  bzero(buffer, 1024);
+  bzero(buffer, BUFFER_SIZE);
   strcpy(buffer, "Welcome to the UDP Server.");
-  sendto(sockfd, buffer, 1024, 0, (struct sockaddr*)&client_addr, sizeof(client_addr));
+  if( (retVal = sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&server_addr, sizeof(server_addr))) != BUFFER_SIZE )
+  {
+    perror("sendto");
+    exit(1);
+  }
   printf("[+]Data send: %s\n", buffer);
 
   return 0;
