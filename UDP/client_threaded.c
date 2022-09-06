@@ -21,27 +21,6 @@ void checkHostName(int hostname)
         exit(1);
     }
 }
-  
-// Returns host information corresponding to host name
-void checkHostEntry(struct hostent * hostentry)
-{
-    if (hostentry == NULL)
-    {
-        perror("gethostbyname");
-        exit(1);
-    }
-}
-  
-// Converts space-delimited IPv4 addresses
-// to dotted-decimal format
-void checkIPbuffer(char *IPbuffer)
-{
-    if (NULL == IPbuffer)
-    {
-        perror("inet_ntoa");
-        exit(1);
-    }
-}
 
 static void publishIPAddressInfo(const char* host) 
 {
@@ -72,8 +51,6 @@ int main(int argc, char **argv)
 {
   
   char hostbuffer[256];
-  char *IPbuffer;
-  struct hostent *host_entry;
   int hostname;
   
     // To retrieve hostname
@@ -89,8 +66,6 @@ int main(int argc, char **argv)
   
   char *ip = "192.168.1.39"; // Windows:192.168.1.38 -- 10.0.2.10 Ubuntu:127.0.0.1 VB:192.168.56.1 
   int port = atoi(argv[1]);
-
-  socklen_t addr_size;
   
   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   memset(&addr, '\0', sizeof(addr));
@@ -102,7 +77,7 @@ int main(int argc, char **argv)
   printf("\nIP that is client sending msg to : %s\n", assignedAddr);
   
   pthread_t sender;
-  retVal = pthread_create(&sender,NULL,sender_th, NULL);
+  retVal = pthread_create(&sender, NULL, sender_th, NULL);
 	if(retVal != 0)
 	{
 		perror("Error on creating thread");
@@ -117,14 +92,14 @@ int main(int argc, char **argv)
 
 void* sender_th()
 {
-  printf("%s started\n",__FUNCTION__);
+  printf("%s started\n", __FUNCTION__);
   char buffer[BUFFER_SIZE];
   int msgNum = 0;
   while(1)
   {
   bzero(buffer, BUFFER_SIZE);
   strcpy(buffer, "Hello, World!");
-		if( (retVal = sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&addr, sizeof(addr))) != BUFFER_SIZE )
+		if( (retVal = sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&addr, sizeof(addr))) < 0 )
 		{
 		  perror("sendto");
 		  exit(1);
