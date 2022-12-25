@@ -50,13 +50,13 @@ int main(int argc, char **argv){
     char *IPbuffer;
     struct hostent *host_entry;
     int hostname;
-	int retVal;
+    int retVal;
   
 // To retrieve hostname
     hostname = gethostname(hostbuffer, sizeof(hostbuffer));
     checkHostName(hostname);
 	
-	publishIPAddressInfo(hostbuffer);
+    publishIPAddressInfo(hostbuffer);
   
     if (argc != 2) {
     printf("Usage: %s <port>\n", argv[0]);
